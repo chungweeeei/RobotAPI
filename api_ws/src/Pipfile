@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+structlog = "*"
+pydantic = "*"
+sqlalchemy-utils = "*"
+pytest = "*"
+psycopg2-binary = "*"
+assertpy = "*"
+sqlalchemy = "*"
+uvicorn = "*"
+python-multipart = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"
+python_full_version = "3.10.12"

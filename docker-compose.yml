@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db_server:
     container_name: postgres_container
@@ -8,10 +6,6 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-    volumes:
-      - type: bind
-        source: ~/Documents/RobotAPI/pgdata/primary
-        target: /var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
@@ -31,12 +25,25 @@ services:
       test_network:
         ipv4_address: 172.27.0.3
 
-  test:
-    container_name: robot_api_container
+  api_server:
+    container_name: api_container
     image: base-image:latest
     volumes:
       - type: bind
-        source: ~/Documents/RobotAPI/src
+        source: ~/Desktop/Robot/RobotAPI/api_ws/src
+        target: /home/chunwei/src
+    stdin_open: true
+    tty: true
+    networks:
+      test_network:
+        ipv4_address: 172.27.0.4
+
+  test_client:
+    container_name: client_container
+    image: base-image:latest
+    volumes:
+      - type: bind
+        source: ~/Desktop/Robot/RobotAPI/client_ws/src
         target: /home/chunwei/src
     stdin_open: true
     tty: true
