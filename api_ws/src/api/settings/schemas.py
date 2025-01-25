@@ -2,8 +2,8 @@ from pydantic import BaseModel
 
 class SystemSettingsResp(BaseModel):
 
-    robot_id: str = "robot_1"
-    robot_name: str = "robot_1"
+    robot_id: str = "robot1"
+    robot_name: str = "robot1"
 
     map: str = "test"
     initial_pose_x: float = 0.0
@@ -13,3 +13,8 @@ class SystemSettingsResp(BaseModel):
 class SettingsResp(BaseModel):
 
     system: SystemSettingsResp = SystemSettingsResp()
+
+class TestReq(BaseModel):
+
+    category: str
+    settings: str

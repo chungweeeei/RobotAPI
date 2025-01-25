@@ -7,12 +7,15 @@ from fastapi import (
 )
 
 import structlog
+from io import BytesIO
 
 from repository.file import (
     FileRepo,
     FileObject,
 )
 from api.file.schemas import UploadFileProgress
+
+from starlette.requests import ClientDisconnect
 
 
 def init_file_router(file_repo: FileRepo) -> APIRouter:
@@ -28,27 +31,40 @@ def init_file_router(file_repo: FileRepo) -> APIRouter:
         # register file into upload file repo
         if not file_repo.check_file(file_id=file_id):
             file_repo.register_upload_file(file_id=file_id,
-                                           file_name=file_name,
-                                           start_byte=start_byte)
+                                           file_obj=FileObject(name=file_name,
+                                                               start_byte=start_byte,
+                                                               content=BytesIO()))
         # start uploading file
-        async for chunk in request.stream():
-            file_repo.upload(file_id=file_id, content=chunk)
+        try:
+            async for chunk in request.stream():
+                file_repo.upload(file_id=file_id, content=chunk)
+        except ClientDisconnect:
+            structlog.get_logger().info(f"Client has disconnected, File[{file_id}] have been uploaded {file_repo.get_uploaded_byte(file_id=file_id)} bytes")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Client has disconnected")
+        except Exception as err:
+            structlog.get_logger().error(f"{str(err)}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail="Internal server error")
 
         structlog.get_logger().info(f"File {file_id} have been uploaded")
+
+        file_repo.deploy(file_id=file_id)
 
         return status.HTTP_200_OK
 
     @file_router.get("/v1/file/upload/progress",
                      response_model=UploadFileProgress)
-    def get_file_upload_bytes(file_id: str):
+    def get_file_uploaded_byte(file_id: str):
 
         try:
-            upload_bytes = file_repo.get_upload_bytes(file_id=file_id)
+            uploaded_byte = file_repo.get_uploaded_byte(file_id=file_id)
         except Exception as err:
-            structlog.get_logger().error(f"{str(err)}")
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail=f"File id {file_id} has not registered yet")
+            structlog.get_logger().warn(f"{str(err)}")
+            return UploadFileProgress(uploaded_byte=0)
 
-        return UploadFileProgress(upload_bytes=upload_bytes)
+        return UploadFileProgress(uploaded_byte=uploaded_byte)
+
+    # {TODO} provide a endpoint which send the streaming response
 
     return file_router

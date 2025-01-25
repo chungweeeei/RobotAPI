@@ -1,0 +1,6 @@
+{
+    "robot_id": "robot01",
+    "robot_name": "robot01",
+    "ip": "172.27.0.3",
+    "port": 3000
+}

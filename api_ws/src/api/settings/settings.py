@@ -1,13 +1,15 @@
+import structlog
+
 from fastapi import (
     APIRouter,
     status
 )
 
-from api.settings.schemas import SettingsResp
-
-
-from fastapi.responses import JSONResponse
-
+from api.settings.schemas import (
+    SystemSettingsResp,
+    SettingsResp,
+    TestReq
+)
 
 def init_settings_router() -> APIRouter:
 
@@ -34,7 +36,7 @@ def init_settings_router() -> APIRouter:
         - automatically generate in swagger UI
     """
 
-    @settings_router.get("/v1/settings/category",
+    @settings_router.get("/v1/settings",
                          response_model=SettingsResp,
                          responses={
                              status.HTTP_404_NOT_FOUND: {
@@ -47,6 +49,19 @@ def init_settings_router() -> APIRouter:
                              }
                          })
     def get_settings():
-        return status.HTTP_404_NOT_FOUND
+
+        resp = SettingsResp(system=SystemSettingsResp(robot_id="robot2",
+                                                      robot_name="robot2",
+                                                      map="test1",
+                                                      initial_pose_x=5.0,
+                                                      initial_pose_y=5.0,
+                                                      initial_pose_yaw=0.0))
+
+        return resp
+    
+    @settings_router.put("/v1/settings")
+    def modified_settings(request: TestReq):
+        structlog.get_logger().info(request)
+        return status.HTTP_200_OK
 
     return settings_router

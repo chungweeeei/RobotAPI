@@ -10,6 +10,7 @@ from repository.file import setup_file_repo
 
 from api.settings.settings import init_settings_router
 from api.file.file import init_file_router
+from api.test.test import init_test_router
 
 if __name__ == "__main__":
 
@@ -41,6 +42,7 @@ if __name__ == "__main__":
 
     fastapi.include_router(init_settings_router())
     fastapi.include_router(init_file_router(file_repo=file_repo))
+    fastapi.include_router(init_test_router())
 
     try:
         uvicorn.run(fastapi, host="0.0.0.0", port=3000)

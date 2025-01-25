@@ -2,6 +2,9 @@ FROM ubuntu:22.04
 
 USER root
 
+# set environment variables
+ENV LANG=C.UTF-8
+
 RUN apt-get -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qq install \
     git vim pip wget npm
