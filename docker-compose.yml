@@ -1,5 +1,5 @@
 services:
-  db_server:
+  db-server:
     container_name: postgres_container
     image: postgres:16.5
     restart: always
@@ -25,25 +25,27 @@ services:
       test_network:
         ipv4_address: 172.27.0.3
 
-  api_server:
+  api-server:
     container_name: api_container
     image: base-image:latest
     volumes:
       - type: bind
-        source: ~/Desktop/Robot/RobotAPI/api_ws/src
+        source: ./api_ws/src
         target: /home/chunwei/src
     stdin_open: true
     tty: true
+    environment:
+      - PYTHONPATH=/home/chunwei/src
     networks:
       test_network:
         ipv4_address: 172.27.0.4
 
-  test_client:
+  test-client:
     container_name: client_container
     image: base-image:latest
     volumes:
       - type: bind
-        source: ~/Desktop/Robot/RobotAPI/client_ws/src
+        source: ./client_ws/src
         target: /home/chunwei/src
     stdin_open: true
     tty: true

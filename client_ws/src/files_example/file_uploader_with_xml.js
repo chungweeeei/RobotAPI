@@ -1,10 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { start } = require('repl');
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 const fileBaseURL = "http://172.27.0.4:3000/v1/file";
 const uploadURL = `${fileBaseURL}/upload`;
-const putSettingsURL = 'http://172.27.0.4:3000/v1/settings';
 const fetchUploadProgressURL= `${fileBaseURL}/upload/progress`;
 
 // const xhr = new XMLHttpRequest();
@@ -47,9 +47,11 @@ const fetchUploadProgressURL= `${fileBaseURL}/upload/progress`;
 
 // xhr.send();
 
+// In a Node.js environment, you can't use the XMLHttpRequest object directly since it is a browser-specific API.
+
+
 class uploader {
     constructor (filePath, fileId){
-
         this._filePath = filePath;
         this._fileId = fileId;
     }
@@ -83,8 +85,27 @@ class uploader {
     async uploadFile() {
 
         try {
-
             const startByte = await this.getUploadedProgress();
+
+            // register xhr instance
+            const xhr = this._xhr = new XMLHttpRequest()
+
+            xhr.open("POST", uploadURL, true);
+
+            // set request header
+            xhr.setRequestHeader("x-file-id", this._fileId);
+            xhr.setRequestHeader('x-file-name', path.basename(this._filePath));
+            xhr.setRequestHeader('x-start-byte', startByte);
+            xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+            xhr.onreadystatechange = function () {
+                if(xhr.readyState === 4){
+                    // handle status code
+                    console.log(`Receive response from api server, status: ${xhr.status}`);
+                } else {
+                    console.log(`Current state: ${xhr.readyState}`);
+                }
+            }
 
             // read file
             fs.readFile(this._filePath, (err, data) => {
@@ -93,29 +114,6 @@ class uploader {
                 }
 
                 console.log(`[UpLoader][uploadFile] Finished read file ${this._filePath}`);
-
-                const xhr = this._xhr = new XMLHttpRequest()
-
-                xhr.open("POST", uploadURL, true);
-
-                xhr.addEventListener("progress", (e) => {
-                    console.log(`${e}`);
-                })
-
-                // set request header
-                xhr.setRequestHeader("x-file-id", this._fileId);
-                xhr.setRequestHeader('x-file-name', path.basename(this._filePath));
-                xhr.setRequestHeader('x-start-byte', startByte);
-                xhr.setRequestHeader("Content-Type", "application/octet-stream");
-
-                xhr.onreadystatechange = function () {
-                    if(xhr.readyState === 4){
-                        // handle status code
-                        console.log(`Receive response from api server, status: ${xhr.status}`);
-                    } else {
-                        console.log(`Current state: ${xhr.readyState}`);
-                    }
-                }
 
                 xhr.send(data.slice(this.startByte));
             })

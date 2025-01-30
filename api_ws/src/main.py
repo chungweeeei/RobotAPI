@@ -2,6 +2,7 @@ import uvicorn
 import structlog
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from settings.settings import postgres_settings
 from database.postgres import connect_to_postgres
@@ -10,7 +11,6 @@ from repository.file import setup_file_repo
 
 from api.settings.settings import init_settings_router
 from api.file.file import init_file_router
-from api.test.test import init_test_router
 
 if __name__ == "__main__":
 
@@ -38,11 +38,19 @@ if __name__ == "__main__":
                       description=description,
                       version="1.0.0")
 
+    fastapi.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     file_repo = setup_file_repo(logger=logger)
+
 
     fastapi.include_router(init_settings_router())
     fastapi.include_router(init_file_router(file_repo=file_repo))
-    fastapi.include_router(init_test_router())
 
     try:
         uvicorn.run(fastapi, host="0.0.0.0", port=3000)

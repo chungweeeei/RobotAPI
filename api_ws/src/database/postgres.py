@@ -23,7 +23,6 @@ def _execute(engine: Engine, sql: str, raise_error: bool = True):
             if raise_error:
                 raise e
 
-
 def connect_to_postgres(
         host: str,
         port: int,
@@ -39,6 +38,6 @@ def connect_to_postgres(
     if not database_exists(engine.url):
         create_database(engine.url)
 
-    _execute(engine=engine, sql=f"ALTER DATABASE \"{db_name} \" SET timezone TO 'Asia/Taipei';")
+    # _execute(engine=engine, sql=f"ALTER DATABASE \"{db_name} \" SET timezone TO 'Asia/Taipei';")
 
     return engine
