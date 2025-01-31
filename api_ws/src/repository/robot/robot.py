@@ -8,58 +8,18 @@ from typing import (
 
 from sqlalchemy import (
     Engine,
-    Column,
-    String,
-    Float,
-    DateTime
+    select
 )
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.postgresql import insert
 
-from sqlalchemy.sql import (
-    func
+from schemas import (
+    _ROBOT_REPO_BASE,
+    RobotInfo,
+    RobotStatus,
+    MapInfo,
+    LatestRobotStatus
 )
-
-from sqlalchemy.orm import (
-    sessionmaker,
-    registry
-)
-
-from sqlalchemy.dialects.postgresql import (
-    insert
-)
-
-from schemas import LatestRobotStatus
-
-_ROBOT_REPO_BASE = registry().generate_base()
-
-class RobotInfo(_ROBOT_REPO_BASE):
-    __tablename__ = "robot_info"
-    robot_id = Column(String, primary_key=True)
-    robot_name = Column(String)
-
-    registered_at = Column(DateTime(timezone=None),
-                           default=func.now())
-
-    deleted_at = Column(DateTime(timezone=None),
-                        nullable=True)
-
-class RobotStatus(_ROBOT_REPO_BASE):
-    __tablename__ = "robot_status"
-    robot_id = Column(String, primary_key=True)
-    map_name = Column(String)
-    position_x = Column(Float)
-    position_y = Column(Float)
-    position_yaw = Column(Float)
-
-    registered_at = Column(DateTime(timezone=None),
-                           default=func.now())
-
-    updated_at = Column(DateTime(timezone=None),
-                        default=func.now(),
-                        onupdate=func.now())
-
-    deleted_at = Column(DateTime(timezone=None),
-                        nullable=True)
-
 
 class RobotRepo:
 
@@ -136,6 +96,40 @@ class RobotRepo:
                 self.logger.error("[RobotRepo][register] Failed to register: {}".format(err))
                 session.rollback()
 
+    def deploy_map(self, map_info: MapInfo):
+
+        with self.session_maker() as session:
+
+            try:
+                insert_stmt = (
+                    insert(MapInfo).
+                    values(map_id=map_info.map_id,
+                           map_name=map_info.map_name,
+                           resolution=map_info.resolution,
+                           origin_pose_x=map_info.origin_pose_x,
+                           origin_pose_y=map_info.origin_pose_y,
+                           width=map_info.width,
+                           height=map_info.height)
+                )
+
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=[MapInfo.map_id],
+                    set_={"map_name": map_info.map_name,
+                          "resolution": map_info.resolution,
+                          "origin_pose_x": map_info.origin_pose_x,
+                          "origin_pose_y": map_info.origin_pose_y,
+                          "width": map_info.width,
+                          "height": map_info.height}
+                )
+
+                session.execute(do_update_stmt)
+                session.commit()
+
+            except Exception as err:
+                self.logger.error("[RobotRepo][deploy_map] Failed to deploy map {}: {}".format(map_info.map_name, err))
+                session.rollback()
+
+
     def upsert_robot_status(self, robot_status: RobotStatus):
 
         with self.session_maker() as session:
@@ -144,7 +138,7 @@ class RobotRepo:
                 insert_stmt = (
                     insert(RobotStatus).
                     values(robot_id=robot_status.robot_id,
-                           map_name=robot_status.map_name,
+                           map_id=robot_status.map_id,
                            position_x=robot_status.position_x,
                            position_y=robot_status.position_y,
                            position_yaw=robot_status.position_yaw,
@@ -155,7 +149,7 @@ class RobotRepo:
 
                 do_upsert_stmt = insert_stmt.on_conflict_do_update(
                     index_elements=[RobotStatus.robot_id],
-                    set_={"map_name": robot_status.map_name,
+                    set_={"map_id": robot_status.map_id,
                           "position_x": robot_status.position_x,
                           "position_y": robot_status.position_y,
                           "position_yaw": robot_status.position_yaw,
@@ -175,17 +169,59 @@ class RobotRepo:
         with self.session_maker() as session:
 
             try:
-                '''
-                    query multiple tables
-                '''
-                robot = session.query(RobotInfo, RobotStatus).join(RobotStatus, RobotInfo.robot_id == RobotStatus.robot_id).all()
+                """
+                    Query multiple tables 
 
-                latest_robot_status = [LatestRobotStatus(robot_id=info.robot_id,
-                                                         robot_name=info.robot_name,
-                                                         map_name=status.map_name,
-                                                         position_x=status.position_x,
-                                                         position_y=status.position_y,
-                                                         position_yaw=status.position_yaw) for info, status in robot]
+                    in sql syntax, JOIN ... ON clause can finished this.
+                """
+
+                robot_status_stmt = (
+                    select(
+                        RobotInfo.robot_id,
+                        RobotInfo.robot_name,
+                        RobotStatus.map_id,
+                        RobotStatus.position_x,
+                        RobotStatus.position_y,
+                        RobotStatus.position_yaw
+                    )
+                    .join(RobotStatus, RobotInfo.robot_id == RobotStatus.robot_id)
+                    .cte("robot_status_stmt")
+                )
+
+                """
+                    convert above query command to sql clause would be:
+                    
+                    SELECT robot_info.*, robot_status.*
+                    FROM robot_info
+                    JOIN robot_status
+                        ON robot_info.robot_id = robot_status.robot_id
+                """
+
+
+                """
+                    In SQLAlchemy, .cte is a method used to create a Common Table Expression(CTE).
+                    A CTE is a temporary result set that you can reference within a SELECT, INSERT, UPDATE, or DELETE statement.
+                    Use the CTE to join with MapInfo to get the map_name
+                """
+                result = (
+                    session.query(
+                        robot_status_stmt.c.robot_id,
+                        robot_status_stmt.c.robot_name,
+                        MapInfo.map_name,
+                        robot_status_stmt.c.position_x,
+                        robot_status_stmt.c.position_y,
+                        robot_status_stmt.c.position_yaw
+                    )
+                    .join(MapInfo, robot_status_stmt.c.map_id == MapInfo.map_id)
+                    .all()
+                )
+
+                latest_robot_status = [LatestRobotStatus(robot_id=row.robot_id,
+                                                         robot_name=row.robot_name,
+                                                         map_name=row.map_name,
+                                                         position_x=row.position_x,
+                                                         position_y=row.position_y,
+                                                         position_yaw=row.position_yaw) for row in result]
 
                 return latest_robot_status
 
@@ -249,8 +285,16 @@ if __name__ == "__main__":
                                              robot_name="01", 
                                              registered_at=to_taipei_time(timestamp=time.time())))
     
+    robot_repo.deploy_map(map_info=MapInfo(map_id="map01",
+                                           map_name="test_map",
+                                           resolution=0.03,
+                                           origin_pose_x=0.0,
+                                           origin_pose_y=0.0,
+                                           width=640,
+                                           height=640))
+
     robot_repo.upsert_robot_status(robot_status=RobotStatus(robot_id="robot01",
-                                                            map_name="test",
+                                                            map_id="map01",
                                                             position_x=0.0,
                                                             position_y=0.0,
                                                             position_yaw=0.0,
@@ -258,7 +302,7 @@ if __name__ == "__main__":
                                                             updated_at=to_taipei_time(timestamp=time.time())))
     
     robot_repo.upsert_robot_status(robot_status=RobotStatus(robot_id="robot01",
-                                                            map_name="test",
+                                                            map_id="map01",
                                                             position_x=5.0,
                                                             position_y=5.0,
                                                             position_yaw=0.0,
