@@ -10,11 +10,15 @@ class SystemSettingsResp(BaseModel):
     initial_pose_y: float = 0.0
     initial_pose_yaw: float = 0.0
 
+# class SystemSettingReq(BaseModel):    
+
+class MoveSettingsResp(BaseModel):
+
+    max_linear_speed: float = 1.0
+    max_angular_speed: float = 0.3
+
+
 class SettingsResp(BaseModel):
 
     system: SystemSettingsResp = SystemSettingsResp()
-
-class TestReq(BaseModel):
-
-    category: str
-    settings: str
+    move: MoveSettingsResp = MoveSettingsResp()

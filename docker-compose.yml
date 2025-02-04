@@ -36,6 +36,13 @@ services:
     tty: true
     environment:
       - PYTHONPATH=/home/chunwei/src
+    deploy:
+      restart_policy:
+        condition: always
+    init: true
+    depends_on:
+      - db-server
+      - pgadmin
     networks:
       test_network:
         ipv4_address: 172.27.0.4
@@ -52,6 +59,19 @@ services:
     networks:
       test_network:
         ipv4_address: 172.27.0.5
+
+  node-server:
+    container_name: node-server
+    image: base-image:latest
+    volumes:
+      - type: bind
+        source: ./node_ws
+        target: /home/chunwei/node_ws
+    stdin_open: true
+    tty: true
+    networks:
+      test_network:
+        ipv4_address: 172.27.0.6
 
 networks:
   test_network:

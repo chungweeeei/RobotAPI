@@ -15,6 +15,9 @@ sqlalchemy = "*"
 uvicorn = "*"
 python-multipart = "*"
 pytz = "*"
+pathlib = "*"
+passlib = "*"
+pyjwt = "*"
 
 [dev-packages]
 

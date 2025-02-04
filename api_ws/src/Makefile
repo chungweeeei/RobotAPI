@@ -29,6 +29,7 @@ endif
 
 lock:
 	@pipenv lock
+	@pipenv requirements > requirements.txt
 
 .PHONY: run
 

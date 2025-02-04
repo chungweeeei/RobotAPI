@@ -9,7 +9,7 @@ from fastapi import (
 import structlog
 from io import BytesIO
 
-from repository.file import (
+from repository.file.file import (
     FileRepo,
     FileObject,
 )

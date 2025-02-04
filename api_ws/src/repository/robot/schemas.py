@@ -26,6 +26,10 @@ class RobotInfo(_ROBOT_REPO_BASE):
 
     deleted_at = Column(DateTime(timezone=None),
                         nullable=True)
+    
+    def __repr__(self) -> str:
+
+        return f"robot_id: {self.robot_id}, robot_name: {self.robot_name}, registered_at: {self.registered_at}"
 
 class RobotStatus(_ROBOT_REPO_BASE):
     __tablename__ = "robot_status"
@@ -44,16 +48,10 @@ class RobotStatus(_ROBOT_REPO_BASE):
 
     deleted_at = Column(DateTime(timezone=None),
                         nullable=True)
+    
+    def __repr__(self) -> str:
 
-class MapInfo(_ROBOT_REPO_BASE):
-    __tablename__ = "map_info"
-    map_id = Column(String, primary_key=True)
-    map_name = Column(String)
-    resolution = Column(Float)
-    origin_pose_x = Column(Float)
-    origin_pose_y = Column(Float)
-    width = Column(Integer)
-    height = Column(Integer)
+        return f"robot_id: {self.robot_id}, map_id: {self.map_id}, position_x: {self.position_x}, position_y: {self.position_y}, position_yaw: {self.position_yaw}, registered_at: {self.registered_at}, updated_at: {self.updated_at}"
 
 class LatestRobotStatus(BaseModel):
     robot_id: str = Field(..., examples="robot01", description="robot unique id")

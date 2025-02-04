@@ -335,15 +335,15 @@ def setup_book_repo(logger: structlog.stdlib.BoundLogger, engine: Engine) -> Boo
 
 if __name__ == "__main__":
 
-    from settings.settings import learning_postgres_settings
+    from settings.settings import postgres_settings
     from database.postgres import connect_to_postgres
 
     pg_engine = connect_to_postgres(
-        host=learning_postgres_settings.host,
-        port=learning_postgres_settings.port,
-        db_name=learning_postgres_settings.db_name,
-        user=learning_postgres_settings.user,
-        password=learning_postgres_settings.password
+        host=postgres_settings.host,
+        port=postgres_settings.port,
+        db_name="learning_db",
+        user=postgres_settings.user,
+        password=postgres_settings.password
     )
 
     logger = structlog.get_logger()

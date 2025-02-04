@@ -19,7 +19,7 @@ RUN pip3 install pipenv
 #
 RUN npm cache clean -f
 RUN npm install -g n
-RUN n 16.19.1
+RUN n 20.18.2
 RUN npm install --global yarn pm2 pkg
 
 # Create a non-root user

@@ -1,21 +1,31 @@
 import structlog
-
-from typing import Annotated
+import datetime
 
 from fastapi import (
     APIRouter,
     Depends,
-    status
+    status,
+    HTTPException
 )
 
-from fastapi.security import (
-    OAuth2PasswordRequestForm,
-    OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm
+
+from repository.user.user import UserRepo
+from repository.user.schemas import UserInfo
+from repository.exceptions import RepoInternalError
+
+from security.securities import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    verify_password,
+    generate_access_token
 )
 
-def init_login_router() -> APIRouter:
+from api.user import schemas as user_schemas
 
-    login_router = APIRouter(prefix="", tags=["login"])
+
+def init_login_router(user_repo: UserRepo) -> APIRouter:
+
+    login_router = APIRouter(prefix="", tags=["Login"])
 
     """
         OAuth2:
@@ -25,7 +35,7 @@ def init_login_router() -> APIRouter:
 
         FastAPI is based on OpenAPI. OpenAPI has a way to define multiple security "schemes".
         By using them, you can take advantage of all these standard-based tools, including these interactive documentation systems.
-        
+
         OpenAPI defines the following security schemas:
 
         - apiKey: an application specific key that can come from:
@@ -45,10 +55,30 @@ def init_login_router() -> APIRouter:
              - password: some next chapters will cover examples of this.
     """
 
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    @login_router.post("/v1/login/access-token",
+                       response_model=user_schemas.Token)
+    def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+        """
+          create access token
+        """
+        try:
+            user_info: UserInfo = user_repo.get_user(user_id=form_data.username)
+        except RepoInternalError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Incorrect username")
+        
+        ## verified password
+        verified = verify_password(password=form_data.password,
+                                   hashed_password=user_info.hashed_password)
+        
+        if not verified:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Incorect password")
+        
+        access_token = generate_access_token(user_id=user_info.user_id,
+                                             expires_delta=datetime.timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
-    @login_router.get("/login")
-    def get_access_token(token: Annotated[str, Depends(oauth2_scheme)]):
-        return {"token": token}
+        return user_schemas.Token(access_token=access_token,
+                                  token_type="bearer")
 
     return login_router

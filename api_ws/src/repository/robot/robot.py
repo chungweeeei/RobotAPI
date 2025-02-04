@@ -13,11 +13,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 
-from schemas import (
+from repository.robot.schemas import (
     _ROBOT_REPO_BASE,
     RobotInfo,
     RobotStatus,
-    MapInfo,
     LatestRobotStatus
 )
 
@@ -30,7 +29,7 @@ class RobotRepo:
         # register log handler
         self.logger = logger
 
-        # register database engine
+        # register database session maker 
         self.session_maker = sessionmaker(autocommit=False,
                                           autoflush=False,
                                           bind=engine)
@@ -96,40 +95,6 @@ class RobotRepo:
                 self.logger.error("[RobotRepo][register] Failed to register: {}".format(err))
                 session.rollback()
 
-    def deploy_map(self, map_info: MapInfo):
-
-        with self.session_maker() as session:
-
-            try:
-                insert_stmt = (
-                    insert(MapInfo).
-                    values(map_id=map_info.map_id,
-                           map_name=map_info.map_name,
-                           resolution=map_info.resolution,
-                           origin_pose_x=map_info.origin_pose_x,
-                           origin_pose_y=map_info.origin_pose_y,
-                           width=map_info.width,
-                           height=map_info.height)
-                )
-
-                do_update_stmt = insert_stmt.on_conflict_do_update(
-                    index_elements=[MapInfo.map_id],
-                    set_={"map_name": map_info.map_name,
-                          "resolution": map_info.resolution,
-                          "origin_pose_x": map_info.origin_pose_x,
-                          "origin_pose_y": map_info.origin_pose_y,
-                          "width": map_info.width,
-                          "height": map_info.height}
-                )
-
-                session.execute(do_update_stmt)
-                session.commit()
-
-            except Exception as err:
-                self.logger.error("[RobotRepo][deploy_map] Failed to deploy map {}: {}".format(map_info.map_name, err))
-                session.rollback()
-
-
     def upsert_robot_status(self, robot_status: RobotStatus):
 
         with self.session_maker() as session:
@@ -164,70 +129,70 @@ class RobotRepo:
                 self.logger.error("[RobotRepo][upsert_robot_status] Failed to upsert robot_status: {}".format(err))
                 session.rollback()
 
-    def fetch_latest_robot_status(self) -> Union[None, List[LatestRobotStatus]]:
+    # def fetch_latest_robot_status(self) -> Union[None, List[LatestRobotStatus]]:
 
-        with self.session_maker() as session:
+    #     with self.session_maker() as session:
 
-            try:
-                """
-                    Query multiple tables 
+    #         try:
+    #             """
+    #                 Query multiple tables 
 
-                    in sql syntax, JOIN ... ON clause can finished this.
-                """
+    #                 in sql syntax, JOIN ... ON clause can finished this.
+    #             """
 
-                robot_status_stmt = (
-                    select(
-                        RobotInfo.robot_id,
-                        RobotInfo.robot_name,
-                        RobotStatus.map_id,
-                        RobotStatus.position_x,
-                        RobotStatus.position_y,
-                        RobotStatus.position_yaw
-                    )
-                    .join(RobotStatus, RobotInfo.robot_id == RobotStatus.robot_id)
-                    .cte("robot_status_stmt")
-                )
+    #             robot_status_stmt = (
+    #                 select(
+    #                     RobotInfo.robot_id,
+    #                     RobotInfo.robot_name,
+    #                     RobotStatus.map_id,
+    #                     RobotStatus.position_x,
+    #                     RobotStatus.position_y,
+    #                     RobotStatus.position_yaw
+    #                 )
+    #                 .join(RobotStatus, RobotInfo.robot_id == RobotStatus.robot_id)
+    #                 .cte("robot_status_stmt")
+    #             )
 
-                """
-                    convert above query command to sql clause would be:
+    #             """
+    #                 convert above query command to sql clause would be:
                     
-                    SELECT robot_info.*, robot_status.*
-                    FROM robot_info
-                    JOIN robot_status
-                        ON robot_info.robot_id = robot_status.robot_id
-                """
+    #                 SELECT robot_info.*, robot_status.*
+    #                 FROM robot_info
+    #                 JOIN robot_status
+    #                     ON robot_info.robot_id = robot_status.robot_id
+    #             """
 
 
-                """
-                    In SQLAlchemy, .cte is a method used to create a Common Table Expression(CTE).
-                    A CTE is a temporary result set that you can reference within a SELECT, INSERT, UPDATE, or DELETE statement.
-                    Use the CTE to join with MapInfo to get the map_name
-                """
-                result = (
-                    session.query(
-                        robot_status_stmt.c.robot_id,
-                        robot_status_stmt.c.robot_name,
-                        MapInfo.map_name,
-                        robot_status_stmt.c.position_x,
-                        robot_status_stmt.c.position_y,
-                        robot_status_stmt.c.position_yaw
-                    )
-                    .join(MapInfo, robot_status_stmt.c.map_id == MapInfo.map_id)
-                    .all()
-                )
+    #             """
+    #                 In SQLAlchemy, .cte is a method used to create a Common Table Expression(CTE).
+    #                 A CTE is a temporary result set that you can reference within a SELECT, INSERT, UPDATE, or DELETE statement.
+    #                 Use the CTE to join with MapInfo to get the map_name
+    #             """
+    #             result = (
+    #                 session.query(
+    #                     robot_status_stmt.c.robot_id,
+    #                     robot_status_stmt.c.robot_name,
+    #                     MapInfo.map_name,
+    #                     robot_status_stmt.c.position_x,
+    #                     robot_status_stmt.c.position_y,
+    #                     robot_status_stmt.c.position_yaw
+    #                 )
+    #                 .join(MapInfo, robot_status_stmt.c.map_id == MapInfo.map_id)
+    #                 .all()
+    #             )
 
-                latest_robot_status = [LatestRobotStatus(robot_id=row.robot_id,
-                                                         robot_name=row.robot_name,
-                                                         map_name=row.map_name,
-                                                         position_x=row.position_x,
-                                                         position_y=row.position_y,
-                                                         position_yaw=row.position_yaw) for row in result]
+    #             latest_robot_status = [LatestRobotStatus(robot_id=row.robot_id,
+    #                                                      robot_name=row.robot_name,
+    #                                                      map_name=row.map_name,
+    #                                                      position_x=row.position_x,
+    #                                                      position_y=row.position_y,
+    #                                                      position_yaw=row.position_yaw) for row in result]
 
-                return latest_robot_status
+    #             return latest_robot_status
 
-            except Exception as err:
-                self.logger.error("[RobotRepo][fetch_latest_robot_status] Failed to fetch latest robot_status: {}".format(err))
-                session.rollback()
+    #         except Exception as err:
+    #             self.logger.error("[RobotRepo][fetch_latest_robot_status] Failed to fetch latest robot_status: {}".format(err))
+    #             session.rollback()
 
     def fetch_robot_name(self, robot_id: str) -> Union[None, str]:
 
@@ -285,13 +250,6 @@ if __name__ == "__main__":
                                              robot_name="01", 
                                              registered_at=to_taipei_time(timestamp=time.time())))
     
-    robot_repo.deploy_map(map_info=MapInfo(map_id="map01",
-                                           map_name="test_map",
-                                           resolution=0.03,
-                                           origin_pose_x=0.0,
-                                           origin_pose_y=0.0,
-                                           width=640,
-                                           height=640))
 
     robot_repo.upsert_robot_status(robot_status=RobotStatus(robot_id="robot01",
                                                             map_id="map01",
@@ -309,7 +267,7 @@ if __name__ == "__main__":
                                                             registered_at=to_taipei_time(timestamp=time.time()),
                                                             updated_at=to_taipei_time(timestamp=time.time())))
     
-    latest_robot_status = robot_repo.fetch_latest_robot_status()
+    # latest_robot_status = robot_repo.fetch_latest_robot_status()
 
     logger.info("[RobotRepo] latest_robot_status: {}".format(latest_robot_status))
 
