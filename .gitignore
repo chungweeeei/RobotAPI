@@ -1,8 +1,17 @@
+// Mac OS Desktop file
 .DS_Store
 
-//
+// node modules folder
 node_modules
 
 // compressed file
 *.tar
 *.tar.gz
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+
