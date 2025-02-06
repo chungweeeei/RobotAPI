@@ -1,3 +1,5 @@
+import structlog
+
 from fastapi import (
     APIRouter,
     status,
@@ -5,7 +7,11 @@ from fastapi import (
     HTTPException
 )
 
-from typing import List
+from typing import (
+    List,
+    Union,
+    Annotated
+)
 
 from dependecy.dependencies import extract_bind_logger
 
@@ -18,6 +24,7 @@ from api.map import schemas as map_schemas
 def init_map_router(map_repo: MapRepo) -> APIRouter:
 
     map_router = APIRouter(prefix="", tags=["Map"])
+
 
     @map_router.get("/v1/maps",
                     response_model=map_schemas.MapsInfoResp)

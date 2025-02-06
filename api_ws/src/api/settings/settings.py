@@ -12,10 +12,7 @@ from api.settings.schemas import (
     SettingsResp,
 )
 
-from dependecy.dependencies import (
-    extract_bind_logger,
-    allow_all_user
-)
+from dependecy.dependencies import extract_bind_logger
 
 def init_settings_router() -> APIRouter:
 
@@ -67,8 +64,7 @@ def init_settings_router() -> APIRouter:
 
         return resp
     
-    @settings_router.put("/v1/settings/system",
-                         dependencies=[Depends(allow_all_user)])
+    @settings_router.put("/v1/settings/system")
     def set_system_settings():
         return status.HTTP_200_OK
     

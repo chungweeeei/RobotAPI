@@ -1,4 +1,3 @@
-import datetime
 import structlog
 
 from enum import Enum
@@ -6,7 +5,8 @@ from typing import List
 
 from sqlalchemy import (
     Engine,
-    select
+    select,
+    func
 )
 from sqlalchemy.orm import sessionmaker
 
@@ -14,10 +14,12 @@ from sqlalchemy.dialects.postgresql import insert
 
 from repository.version.schemas import (
     _VERSION_BASE_REPO,
-    VersionInfo
+    VersionInfo,
+    generate_test_versions
 )
 
 from repository.exceptions import RepoInternalError
+
 
 class UpgradedState(Enum):
     SUCCESS = "Success"
@@ -43,22 +45,10 @@ class VersionRepo:
         with self.session_maker() as session:
 
             try:
-                started_at = datetime.datetime.now()
-
+                
                 insert_stmt = (
                     insert(VersionInfo)
-                    .values([{"version": "1.2.8",
-                              "upgrade_from": "1.2.7",
-                              "state": UpgradedState.SUCCESS.value,
-                              "started_at": started_at,
-                              "finished_at": started_at + datetime.timedelta(seconds=10.0),
-                              "builded_at": started_at - datetime.timedelta(weeks=1)},
-                             {"version": "1.2.7",
-                              "upgrade_from": "1.2.6",
-                              "state": UpgradedState.SUCCESS.value,
-                              "started_at": started_at,
-                              "finished_at": started_at + datetime.timedelta(seconds=10.0),
-                              "builded_at": started_at - datetime.timedelta(weeks=1)}])
+                    .values(generate_test_versions(num_version=10))
                 )
 
                 do_upsert_stmt = insert_stmt.on_conflict_do_nothing(
@@ -72,6 +62,7 @@ class VersionRepo:
                 session.rollback()
                 self.logger.error(f"[VersionRepo][init_default_versions] Failed to init default versions: {str(err)}")
 
+
     def get_versions(self) -> List[VersionInfo]:
 
         with self.session_maker() as session:
@@ -79,6 +70,7 @@ class VersionRepo:
             try:
                 versions_stmt = (
                     select(VersionInfo)
+                    .order_by(VersionInfo.started_at.desc())
                     .cte("get_versions_cte")
                 )
 

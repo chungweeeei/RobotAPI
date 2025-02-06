@@ -2,6 +2,7 @@ import jwt
 import datetime 
 from typing import Optional
 from passlib.context import CryptContext
+from enum import Enum
 
 from fastapi.security import OAuth2PasswordBearer
 
@@ -17,6 +18,12 @@ oauth2_url = OAuth2PasswordBearer(tokenUrl="/v1/login/access-token")
 
 class UnauthorizedError(BaseException):
     pass
+
+class AuthenticationLevel(Enum):
+
+    ROOT = "root"
+    ADMIN = "admin"
+    GENERAL = "general"
 
 
 def generate_hashed_password(password: str) -> str:

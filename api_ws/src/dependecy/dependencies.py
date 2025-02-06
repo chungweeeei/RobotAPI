@@ -1,6 +1,8 @@
 import uuid
 import structlog
 
+from enum import Enum
+
 from typing import Annotated
 from logger import context_logger
 
@@ -13,10 +15,9 @@ from fastapi import (
 from security.securities import (
     oauth2_url,
     decode_token,
-    UnauthorizedError
+    UnauthorizedError,
+    AuthenticationLevel
 )
-
-from api.user import schemas as user_schemas
 
 def extract_bind_logger() -> structlog.stdlib.BoundLogger:
     
@@ -30,7 +31,7 @@ def extract_bind_logger() -> structlog.stdlib.BoundLogger:
 
     return logger
 
-def get_current_user(token: Annotated[str, Depends(oauth2_url)]) -> user_schemas.User:
+def verify_token(token: Annotated[str, Depends(oauth2_url)]) -> AuthenticationLevel:
 
     try:
         payload = decode_token(token=token)
@@ -39,7 +40,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_url)]) -> user_schemas
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Could not validate credentials",
                             headers={"WWW-Authenticate": "Bearer"})
-    
+
     username = payload.get("sub")
 
     if not username:
@@ -47,12 +48,34 @@ def get_current_user(token: Annotated[str, Depends(oauth2_url)]) -> user_schemas
                             detail="Could not validate credentials (invalid user)",
                             headers={"WWW-Authenticate": "Bearer"})
 
-    return user_schemas.User(user_name=username)
+    if username == "root":
+        return AuthenticationLevel.ROOT
+    elif username == "admin":
+        return AuthenticationLevel.ADMIN
+    else:
+        return AuthenticationLevel.GENERAL
+    
+def verify_root_prviliage(authentication_level: Annotated[AuthenticationLevel, Depends(verify_token)]):
 
+    if authentication_level == AuthenticationLevel.ROOT:
+        return
 
-def allow_all_user(user: Annotated[user_schemas.User, Depends(get_current_user)]):
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Only allow root user",
+                        headers={"WWW-Authenticate": "Bearer"})
 
-    """
-        accept user role 
-    """
-    return user
+def verify_admin_prviliage(authentication_level: Annotated[AuthenticationLevel, Depends(verify_token)]):
+
+    if authentication_level == AuthenticationLevel.ROOT:
+        return
+    
+    elif authentication_level == AuthenticationLevel.ADMIN:
+        return
+    
+    # general user can not authentic
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Only allow root user",
+                        headers={"WWW-Authenticate": "Bearer"})
+
+def verify_all_prviliage(authentication_level: Annotated[AuthenticationLevel, Depends(verify_token)]):
+    return

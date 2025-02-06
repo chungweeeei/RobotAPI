@@ -34,7 +34,8 @@ def init_file_router(file_repo: FileRepo) -> APIRouter:
                                            file_obj=FileObject(name=file_name,
                                                                start_byte=start_byte,
                                                                content=BytesIO()))
-        # start uploading file
+
+        # start uploading file {TODO} need to testing mulitple file uploading...
         try:
             async for chunk in request.stream():
                 file_repo.upload(file_id=file_id, content=chunk)

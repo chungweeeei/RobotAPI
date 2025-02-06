@@ -4,7 +4,8 @@ from typing import List
 
 from sqlalchemy import (
     Engine,
-    select
+    select,
+    delete
 )
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -14,9 +15,13 @@ from repository.user.schemas import (
     UserInfo
 )
 
-from repository.exceptions import RepoInternalError
+from repository.exceptions import (
+    BadRequestError,
+    RepoInternalError
+)
 
 from security.securities import generate_hashed_password
+
 
 class UserRepo:
 
@@ -129,7 +134,29 @@ class UserRepo:
             except Exception as err:
                 session.rollback()
                 raise RepoInternalError(f"Failed to get {user_id} user info: {str(err)}")
-        
+    
+    def delete_user(self, user_id: str):
+
+        if user_id == "root" or user_id == "admin":
+            raise BadRequestError(f"Can not remove root/admin user")
+
+        with self.session_maker() as session:
+
+            try:
+                
+                delete_user_stmt = (
+                    delete(UserInfo)
+                    .where(UserInfo.user_id == user_id)
+                )
+
+                session.execute(delete_user_stmt)
+                session.commit()
+
+            except Exception as err:
+                self.logger.error(f"{str(err)}")
+                session.rollback()
+                raise RepoInternalError(f"Failed to delete {user_id}: {str(err)}")
+
 
 def setup_user_repo(logger: structlog.stdlib.BoundLogger,
                     engine: Engine) -> UserRepo:
