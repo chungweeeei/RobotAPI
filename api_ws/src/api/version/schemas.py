@@ -1,10 +1,10 @@
-from typing import (
-    List,
-    Optional
-)
+from typing import List
 
 from datetime import datetime
 from pydantic import BaseModel
+
+from task.upgrade import UpgradeState
+
 
 class VersionInfoResp(BaseModel):
     version: str
@@ -23,3 +23,7 @@ class VersionPaginatedResp(BaseModel):
     page: int # Current Page number
     size: int # Number of items per page
     items: List[VersionInfoResp] # List of items on the current page
+
+class UpgradeProgressResp(BaseModel):
+    state: UpgradeState
+    message: str = "Default Status"

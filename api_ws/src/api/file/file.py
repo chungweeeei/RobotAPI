@@ -13,7 +13,8 @@ from repository.file.file import (
     FileRepo,
     FileObject,
 )
-from api.file.schemas import UploadFileProgress
+
+from api.file import schemas as file_schemas 
 
 from starlette.requests import ClientDisconnect
 
@@ -55,16 +56,26 @@ def init_file_router(file_repo: FileRepo) -> APIRouter:
         return status.HTTP_200_OK
 
     @file_router.get("/v1/file/upload/progress",
-                     response_model=UploadFileProgress)
+                     response_model=file_schemas.UploadFileProgress)
     def get_file_uploaded_byte(file_id: str):
 
         try:
             uploaded_byte = file_repo.get_uploaded_byte(file_id=file_id)
         except Exception as err:
             structlog.get_logger().warn(f"{str(err)}")
-            return UploadFileProgress(uploaded_byte=0)
+            return file_schemas.UploadFileProgress(uploaded_byte=0)
 
-        return UploadFileProgress(uploaded_byte=uploaded_byte)
+        return file_schemas.UploadFileProgress(uploaded_byte=uploaded_byte)
+    
+
+    @file_router.get("/v1/file/upgrade/archives",
+                     response_model=file_schemas.UpgradeArchivesResp)
+    def get_version_archives():
+            
+        archives = file_repo.get_upgrade_versions_archives()
+
+        return file_schemas.UpgradeArchivesResp(archives=archives)
+
 
     # {TODO} provide a endpoint which send the streaming response
 

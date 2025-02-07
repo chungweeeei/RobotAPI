@@ -1,6 +1,6 @@
 import datetime
-from typing import List
 from enum import Enum
+from typing import List
 
 from sqlalchemy import (
     Column,
@@ -25,14 +25,9 @@ class VersionInfo(_VERSION_BASE_REPO):
     builded_at = Column(DateTime(timezone=False),
                         nullable=True)
     
-class UpgradeState(Enum):
-
-    CHECK = "check",
-    BACKUP = "backup",
-    GENERATE = "generate",
-    CLEAN = "clean",
-    INSTALL = "install",
-    RESTART = "restart"
+class UpgradeResp(Enum):
+    SUCCESS = "Success"
+    FAIL = "Failed"
 
 # Version Factory
 def generate_test_versions(num_version: int) -> List:
@@ -41,7 +36,7 @@ def generate_test_versions(num_version: int) -> List:
 
     versions = [{"version": f"1.2.{i+1}",
                  "upgrade_from": f"1.2.{i}",
-                 "state": "Success",
+                 "state": UpgradeResp.SUCCESS.value,
                  "started_at": (started_at - datetime.timedelta(seconds=30 * (num_version - i))),
                  "finished_at": (started_at - datetime.timedelta(seconds=30 * (num_version - i))) + datetime.timedelta(seconds=10),
                  "builded_at": (started_at - datetime.timedelta(seconds=30 * (num_version - i))) - datetime.timedelta(weeks=1)} for i in range(num_version)]

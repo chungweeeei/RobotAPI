@@ -1,4 +1,8 @@
+import os
+import glob
 import structlog
+
+from typing import List
 
 from io import BytesIO
 from threading import Lock
@@ -58,7 +62,7 @@ class FileRepo:
             file_obj = self._upload_files[file_id]
             file_obj.content.seek(0)
 
-            with open(file_obj.name, "wb") as file:
+            with open(os.path.expanduser(f"~/upgrade_folder/{file_obj.name}"), "wb") as file:
                 file.write(file_obj.content.read())
 
         self.logger.info(f"[FileRepo][deploy] {file_obj.name} have been deployed, start to clear local cache data")
@@ -76,7 +80,16 @@ class FileRepo:
 
         self.logger.info(f"[FileRepo][deploy] {file_obj.name} local cache data have been cleared")
 
+    def get_upgrade_versions_archives(self) -> List[str]:
+
+        archives = [os.path.basename(file).removesuffix(".tar.gz") for file in glob.glob(os.path.expanduser("~/upgrade_folder/*.tar.gz"))]
+
+        return archives
+
 def setup_file_repo(logger: structlog.stdlib.BoundLogger) -> FileRepo:
+
+    # check upgrade folder exists or not
+    os.makedirs(os.path.expanduser("~/upgrade_folder"), exist_ok=True)
 
     file_repo = FileRepo(logger=logger)
 

@@ -21,6 +21,7 @@ from api.map.map import init_map_router
 from api.user.login import init_login_router
 from api.user.user import init_user_router
 from api.version.version import init_version_router
+from api.system.system import init_system_router
 
 from middleware import observability
 from logger import context_logger
@@ -77,6 +78,7 @@ if __name__ == "__main__":
     fastapi.include_router(init_login_router(user_repo=user_repo))
     fastapi.include_router(init_user_router(user_repo=user_repo))
     fastapi.include_router(init_version_router(version_repo=version_repo))
+    fastapi.include_router(init_system_router(version_repo=version_repo))
     
     # # setup communication
     # tcp_server = setup_tcp_server(logger=context_logger, 
