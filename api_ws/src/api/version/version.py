@@ -7,6 +7,8 @@ from fastapi import (
     Query
 )
 
+from fastapi.responses import JSONResponse
+
 from repository.version.version import VersionRepo
 from repository.version.schemas import VersionInfo
 
@@ -43,12 +45,12 @@ def init_version_router(version_repo: VersionRepo) -> APIRouter:
         total = len(versions)
         start = (page - 1) * size
         end = start + size
-        items = versions[start: end]
+        versions = versions[start: end]
 
         return version_schemas.VersionPaginatedResp(total=total,
                                                     page=page,
                                                     size=size,
-                                                    items=items)
+                                                    versions=versions)
 
 
     @version_router.get("/v1/versions/{version}")
@@ -77,7 +79,7 @@ def init_version_router(version_repo: VersionRepo) -> APIRouter:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail=f"{str(err)}")
 
-        return status.HTTP_200_OK
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Successfully trigger upgrade"})
 
     @version_router.get("/v1/versions/upgrade/{version}/progress",
                         response_model=version_schemas.UpgradeProgressResp)

@@ -111,6 +111,8 @@ class VersionRepo:
 
     def get_latest_version(self):
 
+        ## {TODO} check latest version
+
         try:
             latest_version = self.get_versions()[0]
             self._current_version = latest_version.version
@@ -119,8 +121,8 @@ class VersionRepo:
 
     def trigger_upgrade(self, version: str):
 
-        if version in self._upgrade_tasks:
-            raise BadRequestError(f"system upgrade to version {version} now")
+        # if version in self._upgrade_tasks:
+        #     raise BadRequestError(f"system upgrade to version {version} now")
         
         upgrade_task = setup_upgrade_task(logger=self.logger)
         self._upgrade_tasks.update({version: upgrade_task})

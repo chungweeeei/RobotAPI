@@ -14,6 +14,7 @@ from repository.map.map import setup_map_repo
 from repository.robot.robot import setup_robot_repo
 from repository.user.user import setup_user_repo
 from repository.version.version import setup_version_repo
+from repository.setting.setting import setup_setting_repo
 
 from api.settings.settings import init_settings_router
 from api.file.file import init_file_router
@@ -70,9 +71,10 @@ if __name__ == "__main__":
     robot_repo = setup_robot_repo(logger=context_logger, engine=pg_engine)
     user_repo = setup_user_repo(logger=context_logger, engine=pg_engine)
     version_repo = setup_version_repo(logger=context_logger, engine=pg_engine)
+    setting_repo = setup_setting_repo(logger=context_logger)
 
     # setup each router
-    fastapi.include_router(init_settings_router())
+    fastapi.include_router(init_settings_router(setting_repo=setting_repo))
     fastapi.include_router(init_map_router(map_repo=map_repo))
     fastapi.include_router(init_file_router(file_repo=file_repo))
     fastapi.include_router(init_login_router(user_repo=user_repo))

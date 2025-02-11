@@ -22,7 +22,7 @@ class VersionPaginatedResp(BaseModel):
     total: int # Total number of items
     page: int # Current Page number
     size: int # Number of items per page
-    items: List[VersionInfoResp] # List of items on the current page
+    versions: List[VersionInfoResp] # List of items on the current page
 
 class UpgradeProgressResp(BaseModel):
     state: UpgradeState

@@ -269,7 +269,7 @@ if __name__ == "__main__":
     
     # latest_robot_status = robot_repo.fetch_latest_robot_status()
 
-    logger.info("[RobotRepo] latest_robot_status: {}".format(latest_robot_status))
+    # logger.info("[RobotRepo] latest_robot_status: {}".format(latest_robot_status))
 
     robot_name = robot_repo.fetch_robot_name(robot_id="robot01")
 
